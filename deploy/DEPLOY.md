@@ -6,7 +6,9 @@
 - Authentication: **SSH key**, pick the key `m.fouad2912@gmail.com` (public key in `C:\Users\11\.ssh\id_ed25519.pub`).
 - Additional Options → tick **Startup scripts** and paste the whole content of `deploy/cloud-init.yaml`.
 - Create. The first boot takes 2-3 minutes: it installs Node 24, opens only SSH in the firewall,
-  disables password logins, and prepares the `mvp-bot` service under `/opt/mvp-bot`.
+  disables password logins, clones https://github.com/MrFo2sh/cyber-x-discord into `/opt/mvp-bot`,
+  installs the dependencies and prepares the `mvp-bot` service. The only thing missing afterwards
+  is `.env` (the bot token), which the deploy script uploads.
 
 ## 2. Point the SSH alias at it
 
@@ -32,8 +34,9 @@ From `D:\discord-bots` in PowerShell:
 .\deploy.ps1 -Logs         # watch the bot's logs
 ```
 
-The deploy uploads the project without `node_modules`, runs `npm ci` on the droplet, registers the
-slash commands, and restarts the service. The bot restarts by itself after a crash or a reboot.
+The deploy uploads `.env`, pulls the latest code from GitHub on the droplet, runs `npm ci`,
+registers the slash commands, and restarts the service. So the routine is: push to GitHub, then
+`.\deploy.ps1`. The bot restarts by itself after a crash or a reboot.
 
 ## Useful commands on the droplet
 

@@ -63,9 +63,11 @@ runcmd:
   # Node.js 24 LTS from NodeSource
   - curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
   - apt-get install -y nodejs
-  # bot directory, owned by the bot user; the service starts after the first deploy
+  # the bot's code straight from GitHub, dependencies installed; only .env (the token) is missing after this
+  - git clone https://github.com/MrFo2sh/cyber-x-discord.git /opt/mvp-bot
   - mkdir -p /opt/mvp-bot/data
   - chown -R bot:bot /opt/mvp-bot
+  - sudo -u bot bash -c 'cd /opt/mvp-bot && npm ci --omit=dev --no-audit --no-fund'
   - systemctl daemon-reload
   - systemctl enable mvp-bot
   # firewall: only SSH in; the bot only needs outbound connections to Discord
