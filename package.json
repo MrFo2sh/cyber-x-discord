@@ -1,0 +1,20 @@
+{
+  "name": "mvp-points-bot",
+  "version": "1.0.0",
+  "description": "Discord bot that tracks monthly points per user in SQLite and announces weekly MVPs",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning src/index.js",
+    "deploy": "node --env-file-if-exists=.env src/deploy-commands.js",
+    "check": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning scripts/check-channel.mjs"
+  },
+  "engines": {
+    "node": ">=23.4"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.27.0",
+    "node-cron": "^4.6.0"
+  }
+}

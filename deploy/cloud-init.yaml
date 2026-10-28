@@ -1,0 +1,77 @@
+#cloud-config
+# Paste this whole file into DigitalOcean -> Create Droplet -> Additional Options -> Startup scripts.
+# Image: Ubuntu 24.04 LTS. The smallest droplet (1 vCPU / 512 MB-1 GB) is plenty for this bot.
+#
+# What it does on first boot:
+#   - creates a "bot" user with your SSH key (root login stays only for SSH keys, no passwords)
+#   - installs Node.js 24 (needed for node:sqlite), ufw (only SSH open), unattended security updates
+#   - creates /opt/mvp-bot and a systemd service "mvp-bot" that keeps the bot running and restarts it on crash/reboot
+# The bot's code is uploaded afterwards from your PC with deploy.ps1 (the service starts once the code is there).
+
+users:
+  - name: bot
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBbdSk9ZhLh2uLVkwwvKOxtO3VA5KpAXklGwHihQKFMK m.fouad2912@gmail.com
+
+package_update: true
+package_upgrade: true
+packages:
+  - ufw
+  - unattended-upgrades
+  - ca-certificates
+  - curl
+  - git
+
+write_files:
+  - path: /etc/systemd/system/mvp-bot.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=MVP Points Discord bot
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=simple
+      User=bot
+      WorkingDirectory=/opt/mvp-bot
+      ExecStart=/usr/bin/node --env-file-if-exists=.env --no-warnings=ExperimentalWarning src/index.js
+      Restart=always
+      RestartSec=5
+      Environment=NODE_ENV=production
+      # hardening
+      NoNewPrivileges=true
+      PrivateTmp=true
+      ProtectSystem=strict
+      ProtectHome=true
+      ReadWritePaths=/opt/mvp-bot/data
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /etc/ssh/sshd_config.d/99-hardening.conf
+    permissions: "0644"
+    content: |
+      PasswordAuthentication no
+      PubkeyAuthentication yes
+      PermitRootLogin prohibit-password
+      KbdInteractiveAuthentication no
+
+runcmd:
+  # Node.js 24 LTS from NodeSource
+  - curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+  - apt-get install -y nodejs
+  # bot directory, owned by the bot user; the service starts after the first deploy
+  - mkdir -p /opt/mvp-bot/data
+  - chown -R bot:bot /opt/mvp-bot
+  - systemctl daemon-reload
+  - systemctl enable mvp-bot
+  # firewall: only SSH in; the bot only needs outbound connections to Discord
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow OpenSSH
+  - ufw --force enable
+  - systemctl restart ssh
+  - echo "cloud-init finished: $(node --version)" > /root/cloud-init-done.txt
